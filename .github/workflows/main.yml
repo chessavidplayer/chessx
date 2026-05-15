@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ master, ci-sandbox, patch-1, windows-test ]
+    branches: [ master, ci-sandbox, patch-1, test ]
 
 jobs:
   build:
