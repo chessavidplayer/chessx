@@ -18,8 +18,8 @@ jobs:
       with:
         version: '5.15.2'
         arch: 'win64_msvc2019_64'
-        # Only download what is necessary to reduce network failure risk
-        modules: 'qtbase qtsvg qttools' 
+        # Essential modules for ChessX to minimize download size
+        modules: 'qtbase qtsvg qttools qtmultimedia' 
         use-official: 'true'
 
     - name: Set up MSVC
@@ -29,10 +29,11 @@ jobs:
       run: choco install ninja
 
     - name: Configure CMake
+      shell: pwsh
       run: |
         cmake -S . -B build -G "Ninja" `
           -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_PREFIX_PATH="${{ env.Qt5_Dir }}"
+          -DCMAKE_PREFIX_PATH="$env:Qt5_DIR"
 
     - name: Build
       run: cmake --build build --config Release
@@ -42,5 +43,5 @@ jobs:
       with:
         name: chessx-windows-binaries
         path: |
-          build/*.exe
-          build/release/*.exe
+          build/chessx.exe
+          build/release/chessx.exe
