@@ -8,63 +8,37 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x64]
-        qt: ['6.7.2'] # Switched to 6.7.2 for better compatibility
-        include:
-          - arch: x64
-            triplet: x64-windows
-            # Updated to the correct architecture string for Qt 6 on Windows
-            qt_arch: win64_msvc2019_64 
-            vcpkg_packages: 'zlib'
-
-    env:
-      VCPKG_COMMIT_ID: 'c7ab9d3110813979a873b2dbac630a9ab79850dc'
-
+    
     steps:
     - name: Checkout sources
       uses: actions/checkout@v4
 
-    - name: Look for cached Qt ${{ matrix.qt }}
-      id: cache-qt
-      uses: actions/cache@v4
-      with:
-        path: ${{ runner.workspace }}/Qt${{ matrix.qt }}-${{ matrix.arch }}
-        key: Qt-${{ runner.os }}-${{ matrix.qt }}-${{ matrix.arch }}
-
-    - name: Install Qt ${{ matrix.qt }}
+    - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: ${{ matrix.qt }}
-        arch: ${{ matrix.qt_arch }}
-        dir: ${{ runner.workspace }}/Qt${{ matrix.qt }}-${{ matrix.arch }}
-        # Removed the 'cached' input that caused the warning
+        version: '6.7.2'
+        arch: 'win64_msvc2019_64'
+        # We'll skip the manual cache step for now to ensure a clean success first
 
-    - uses: lukka/get-cmake@latest
+    - name: Set up MSVC
+      uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Restore artifacts, or run vcpkg, build and cache artifacts
-      uses: lukka/run-vcpkg@v11
-      id: runvcpkg
-      with:
-        vcpkgArguments: '${{ matrix.vcpkg_packages }}'
-        vcpkgTriplet: ${{ matrix.triplet }}
-        vcpkgDirectory: ${{ runner.workspace }}/b/vcpkg
-        vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+    - name: Install Ninja
+      run: choco install ninja
 
-    - name: configure && make
-      uses: lukka/run-cmake@v10
-      id: runcmake_cmd
-      with:
-        cmakeGenerator: Ninja
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        useVcpkgToolchainFile: true
-        vcpkgTriplet: ${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_TRIPLET_OUT }}
-        buildDirectory: '${{ runner.workspace }}/b/ninja/'
+    - name: Configure CMake
+      # We tell CMake to ignore the missing vcpkg for now; 
+      # standard Windows runners usually have zlib or CMake can fetch it.
+      run: |
+        cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build --config Release
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: chessx-windows-x64
-        path: ${{ runner.workspace }}/b/ninja/*.exe # Points specifically to the executable
+        name: chessx-windows-binaries
+        path: |
+          build/*.exe
+          build/release/*.exe
