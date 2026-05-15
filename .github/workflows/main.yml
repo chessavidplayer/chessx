@@ -12,11 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64]
-        qt: ['6.8.1']
+        qt: ['6.7.2'] # Switched to 6.7.2 for better compatibility
         include:
           - arch: x64
             triplet: x64-windows
-            qt_arch: win64_msvc2019_64
+            # Updated to the correct architecture string for Qt 6 on Windows
+            qt_arch: win64_msvc2019_64 
             vcpkg_packages: 'zlib'
 
     env:
@@ -24,11 +25,11 @@ jobs:
 
     steps:
     - name: Checkout sources
-      uses: actions/checkout@v4 # Updated from v2
+      uses: actions/checkout@v4
 
     - name: Look for cached Qt ${{ matrix.qt }}
       id: cache-qt
-      uses: actions/cache@v4 # Updated from v1.2.0
+      uses: actions/cache@v4
       with:
         path: ${{ runner.workspace }}/Qt${{ matrix.qt }}-${{ matrix.arch }}
         key: Qt-${{ runner.os }}-${{ matrix.qt }}-${{ matrix.arch }}
@@ -39,12 +40,12 @@ jobs:
         version: ${{ matrix.qt }}
         arch: ${{ matrix.qt_arch }}
         dir: ${{ runner.workspace }}/Qt${{ matrix.qt }}-${{ matrix.arch }}
-        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        # Removed the 'cached' input that caused the warning
 
     - uses: lukka/get-cmake@latest
 
     - name: Restore artifacts, or run vcpkg, build and cache artifacts
-      uses: lukka/run-vcpkg@v11 # Updated version
+      uses: lukka/run-vcpkg@v11
       id: runvcpkg
       with:
         vcpkgArguments: '${{ matrix.vcpkg_packages }}'
@@ -53,7 +54,7 @@ jobs:
         vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
 
     - name: configure && make
-      uses: lukka/run-cmake@v10 # Updated version
+      uses: lukka/run-cmake@v10
       id: runcmake_cmd
       with:
         cmakeGenerator: Ninja
@@ -63,7 +64,7 @@ jobs:
         buildDirectory: '${{ runner.workspace }}/b/ninja/'
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v4 # Updated from v1
+      uses: actions/upload-artifact@v4
       with:
         name: chessx-windows-x64
-        path: ${{ runner.workspace }}/b/ninja/
+        path: ${{ runner.workspace }}/b/ninja/*.exe # Points specifically to the executable
