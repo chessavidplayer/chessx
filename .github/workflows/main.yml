@@ -18,6 +18,9 @@ jobs:
       with:
         version: '5.15.2'
         arch: 'win64_msvc2019_64'
+        # Only download what is necessary to reduce network failure risk
+        modules: 'qtbase qtsvg qttools' 
+        use-official: 'true'
 
     - name: Set up MSVC
       uses: ilammy/msvc-dev-cmd@v1
@@ -26,7 +29,6 @@ jobs:
       run: choco install ninja
 
     - name: Configure CMake
-      # We explicitly point CMake to the Qt5 installation directory
       run: |
         cmake -S . -B build -G "Ninja" `
           -DCMAKE_BUILD_TYPE=Release `
